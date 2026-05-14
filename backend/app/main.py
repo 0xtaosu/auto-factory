@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .analysis import analyze
 from .database import connect, get_job, save_job
 from .excel_parser import parse_workbook
+from .llm_agent import enhance_report_with_llm
 from .models import DataQualityError
 
 
@@ -38,6 +39,7 @@ async def create_job(file: UploadFile = File(...)) -> dict[str, str]:
         try:
             transactions, data_quality = parse_workbook(content)
             overview, details = analyze(transactions, data_quality)
+            overview, details = enhance_report_with_llm(overview, details)
             save_job(
                 conn,
                 job_id=job_id,

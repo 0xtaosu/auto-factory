@@ -185,6 +185,7 @@ function OverviewScreen({ overview, job, loading, onOpenDetail }) {
         <Metric label="有效记录" value={`${quality?.valid_records ?? '--'} / ${quality?.total_records ?? '--'}`} />
         <Metric label="物料种类" value={`${quality?.material_count ?? '--'} 种`} />
         <Metric label="任务状态" value={job?.status === 'completed' ? '已完成' : '处理中'} />
+        <Metric label="结论来源" value={agentLabel(overview.llm_agent)} />
       </div>
 
       <div className="indicator-grid">
@@ -411,4 +412,11 @@ function anomalyLabel(type) {
     no_outbound: '长期不出库',
     freq_change: '频率异常',
   }[type] || type;
+}
+
+function agentLabel(agent) {
+  if (!agent) return '规则引擎';
+  if (agent.status === 'completed') return `DeepSeek ${agent.model}`;
+  if (agent.status === 'missing_api_key') return '规则引擎';
+  return '规则兜底';
 }

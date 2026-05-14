@@ -7,6 +7,7 @@
 - React 前端上传 ERP Excel。
 - FastAPI 后端解析库存进出库明细。
 - SQLite 保存分析任务和计算结果，不保存原始 Excel。
+- DeepSeek LLM 专家智能体基于计算结果生成老板版结论和建议。
 - 按 PRD 核心算法输出 4 个指标：
   - 库存总资金
   - 呆滞物料占比
@@ -19,7 +20,7 @@
 ```bash
 cd backend
 python3 -m pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+DEEPSEEK_API_KEY=你的key uvicorn app.main:app --reload --port 8000
 ```
 
 API 地址：
@@ -66,8 +67,21 @@ python3 -m pytest backend/tests
 ```bash
 git clone git@github.com:0xtaosu/auto-factory.git
 cd auto-factory
+cp .env.example .env
+nano .env
 docker compose up -d --build
 ```
+
+`.env` 至少配置：
+
+```bash
+WEB_PORT=80
+DEEPSEEK_API_KEY=你的DeepSeek API Key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+不要把 `.env` 提交到 Git。
 
 默认访问地址：
 
@@ -88,6 +102,7 @@ WEB_PORT=8080 docker compose up -d --build
 - `frontend`：Nginx 容器，托管 React 静态文件，并把 `/api/*` 代理到后端。
 - `backend`：FastAPI 容器，提供 Excel 上传、分析任务、概览和下钻 API。
 - `backend_data`：Docker volume，保存 SQLite 数据库。
+- `DEEPSEEK_API_KEY`：后端调用库存健康度专家智能体生成结论。
 
 生产环境前端默认使用同源 `/api`，不需要暴露后端 `8000` 端口。
 
