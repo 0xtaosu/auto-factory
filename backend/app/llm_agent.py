@@ -82,7 +82,7 @@ def _call_deepseek(
         "temperature": 0.2,
         "max_tokens": 1200,
         "response_format": {"type": "json_object"},
-    )
+    }
     request = urllib.request.Request(
         url=f"{base_url.rstrip('/')}/chat/completions",
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
