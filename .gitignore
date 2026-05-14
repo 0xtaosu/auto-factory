@@ -20,3 +20,4 @@ uploads/
 
 # Brainstorm/browser companion local artifacts
 .superpowers/
+.playwright-mcp/
