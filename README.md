@@ -56,3 +56,80 @@ python3 -m pytest backend/tests
 样表路径：
 
 `PRD/01-原始数据模板/机械装备企业ERP报表_4亿产值.xlsx`
+
+## Docker Compose Deploy
+
+服务器需要安装 Docker 和 Docker Compose。
+
+### 首次部署
+
+```bash
+git clone git@github.com:0xtaosu/auto-factory.git
+cd auto-factory
+docker compose up -d --build
+```
+
+默认访问地址：
+
+`http://服务器IP/`
+
+如果服务器 80 端口已被占用，可以改用其他端口：
+
+```bash
+WEB_PORT=8080 docker compose up -d --build
+```
+
+访问：
+
+`http://服务器IP:8080/`
+
+### 服务结构
+
+- `frontend`：Nginx 容器，托管 React 静态文件，并把 `/api/*` 代理到后端。
+- `backend`：FastAPI 容器，提供 Excel 上传、分析任务、概览和下钻 API。
+- `backend_data`：Docker volume，保存 SQLite 数据库。
+
+生产环境前端默认使用同源 `/api`，不需要暴露后端 `8000` 端口。
+
+### 常用命令
+
+查看状态：
+
+```bash
+docker compose ps
+```
+
+查看日志：
+
+```bash
+docker compose logs -f
+```
+
+只看后端日志：
+
+```bash
+docker compose logs -f backend
+```
+
+停止服务：
+
+```bash
+docker compose down
+```
+
+停止并删除 SQLite 数据卷：
+
+```bash
+docker compose down -v
+```
+
+### 更新部署
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+### 反向代理建议
+
+如果服务器前面还有 Nginx、宝塔、1Panel 或云厂商负载均衡，把域名代理到本服务的 `WEB_PORT` 即可。外部只需要开放前端端口，后端通过 Compose 内网访问。
