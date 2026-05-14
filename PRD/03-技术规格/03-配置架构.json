@@ -1,0 +1,186 @@
+# 库存健康度 · 配置架构
+
+> **V2工厂标准工位5-③** | 版本: v1.0
+> **用途**: 所有可配置项的JSON Schema定义。程序员按此实现配置模块。
+
+---
+
+## 1. 配置文件结构
+
+```json
+{
+  "report": {
+    "name": "库存健康度分析报告",
+    "frequency": "weekly",
+    "report_time": "Monday 09:00"
+  },
+  "thresholds": {
+    "stagnant_days": 180,
+    "price_deviation": 0.5,
+    "qty_deviation": 1.0,
+    "min_history_records": 3,
+    "green_ratio": 0.05,
+    "yellow_ratio": 0.15
+  },
+  "display": {
+    "top_count": 10,
+    "currency_unit": "元",
+    "date_format": "YYYY-MM-DD"
+  },
+  "data_source": {
+    "file_path": "",
+    "encoding": "utf-8",
+    "delimiter": ","
+  }
+}
+```
+
+## 2. JSON Schema（全部配置项）
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InventoryHealthConfig",
+  "type": "object",
+  "required": ["report", "thresholds"],
+  "properties": {
+    "report": {
+      "type": "object",
+      "description": "报告通用配置",
+      "required": ["name", "frequency"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "报告名称",
+          "default": "库存健康度分析报告",
+          "maxLength": 100
+        },
+        "frequency": {
+          "type": "string",
+          "description": "报告生成频率",
+          "enum": ["daily", "weekly", "monthly", "quarterly", "on_demand"],
+          "default": "weekly"
+        },
+        "report_time": {
+          "type": "string",
+          "description": "报告推送时间（频率为weekly时生效）",
+          "pattern": "^[A-Za-z]+ \\d{2}:\\d{2}$",
+          "default": "Monday 09:00",
+          "examples": ["Monday 09:00", "Friday 17:00"]
+        }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "description": "分析阈值配置",
+      "required": ["stagnant_days"],
+      "properties": {
+        "stagnant_days": {
+          "type": "integer",
+          "description": "呆滞判定天数。物料最后出库日距今超过此天数即判定为呆滞",
+          "minimum": 30,
+          "maximum": 720,
+          "default": 180,
+          "examples": [90, 180, 360]
+        },
+        "price_deviation": {
+          "type": "number",
+          "description": "单价异常偏离阈值。最近价格 vs 历史均价偏离超过此比例即标记异常",
+          "minimum": 0.1,
+          "maximum": 5.0,
+          "default": 0.5,
+          "examples": [0.3, 0.5, 1.0]
+        },
+        "qty_deviation": {
+          "type": "number",
+          "description": "数量异常偏离阈值。最近采购量 vs 历史平均量偏离超过此比例即标记异常",
+          "minimum": 0.2,
+          "maximum": 10.0,
+          "default": 1.0,
+          "examples": [0.5, 1.0, 2.0]
+        },
+        "min_history_records": {
+          "type": "integer",
+          "description": "异常检测最少历史记录数。少于该次数的物料不参与异常检测",
+          "minimum": 2,
+          "maximum": 20,
+          "default": 3,
+          "examples": [3, 5, 10]
+        },
+        "green_ratio": {
+          "type": "number",
+          "description": "绿灯上限。呆滞占比低于此值显示绿灯",
+          "minimum": 0.01,
+          "maximum": 0.5,
+          "default": 0.05
+        },
+        "yellow_ratio": {
+          "type": "number",
+          "description": "黄灯上限。呆滞占比在此值到green_ratio之间显示黄灯，超过显示红灯",
+          "minimum": 0.02,
+          "maximum": 0.8,
+          "default": 0.15
+        }
+      }
+    },
+    "display": {
+      "type": "object",
+      "description": "显示配置",
+      "properties": {
+        "top_count": {
+          "type": "integer",
+          "description": "TOP清单展示数量",
+          "minimum": 5,
+          "maximum": 50,
+          "default": 10
+        },
+        "currency_unit": {
+          "type": "string",
+          "description": "金额单位",
+          "enum": ["元", "万元", "亿元"],
+          "default": "元"
+        },
+        "date_format": {
+          "type": "string",
+          "description": "日期显示格式",
+          "enum": ["YYYY-MM-DD", "YYYY/MM/DD", "YYYY年MM月DD日"],
+          "default": "YYYY-MM-DD"
+        }
+      }
+    },
+    "data_source": {
+      "type": "object",
+      "description": "数据源配置",
+      "properties": {
+        "file_path": {
+          "type": "string",
+          "description": "数据文件路径。为空时由用户上传",
+          "default": ""
+        },
+        "encoding": {
+          "type": "string",
+          "description": "文件编码",
+          "enum": ["utf-8", "gbk", "gb2312", "utf-16"],
+          "default": "utf-8"
+        },
+        "delimiter": {
+          "type": "string",
+          "description": "CSV分隔符（仅CSV格式适用）",
+          "enum": [",", ";", "\t", "|"],
+          "default": ","
+        }
+      }
+    }
+  }
+}
+```
+
+## 3. 配置管理规范
+
+| 要求 | 说明 |
+|:-----|:-----|
+| 存储位置 | 配置文件存放在项目根目录 `config.json` |
+| 加载优先级 | 用户上传配置 > 默认配置（逐层覆盖） |
+| 配置热更新 | ✅ 支持运行时修改，无需重启 |
+| 配置持久化 | 用户修改后持久化到 `config.json` |
+| 配置校验 | 加载时按JSON Schema校验，不合规回退默认值并告警 |

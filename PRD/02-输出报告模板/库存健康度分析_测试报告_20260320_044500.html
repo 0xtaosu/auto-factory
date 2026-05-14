@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存健康度分析驾驶舱 - 机械装备企业</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.5; min-height: 100vh; }
+        .cockpit { max-width: 1920px; margin: 0 auto; padding: 12px 20px; height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%); border: 1px solid #334155; color: white; padding: 10px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
+        .header-title { font-size: 16px; font-weight: 600; color: #60a5fa; }
+        .header-meta { display: flex; gap: 16px; font-size: 11px; color: #94a3b8; }
+        .summary-section { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; flex-shrink: 0; }
+        .summary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .summary-title { font-size: 13px; font-weight: 600; color: #60a5fa; }
+        .action-btn { padding: 5px 12px; border: 1px solid #475569; border-radius: 5px; font-size: 11px; cursor: pointer; background: #1e293b; color: #e2e8f0; }
+        .summary-text { font-size: 12px; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+        .summary-text .warning { color: #f87171; font-weight: 600; }
+        .summary-text .highlight { color: #fbbf24; font-weight: 600; }
+        .summary-text .urgent { color: #ef4444; font-weight: 600; background: rgba(239, 68, 68, 0.15); padding: 2px 8px; border-radius: 4px; }
+        .action-bar { display: flex; gap: 10px; }
+        .action-btn-large { flex: 1; padding: 12px 16px; border: 1px solid #334155; border-radius: 8px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: flex-start; }
+        .action-btn-large.critical { border-left: 3px solid #ef4444; }
+        .action-btn-large.warning { border-left: 3px solid #f59e0b; }
+        .action-btn-large.normal { border-left: 3px solid #3b82f6; }
+        .action-btn-title { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        .action-btn-main { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+        .action-btn-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .action-btn-amount { font-size: 12px; color: #fbbf24; margin-top: 4px; }
+        .main-content { flex: 1; display: flex; gap: 10px; min-height: 0; }
+        .left-panel { width: 55%; display: flex; flex-direction: column; gap: 10px; }
+        .big-chart-card { flex: 1; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; cursor: pointer; }
+        .big-chart-card.warning { border-left: 3px solid #f59e0b; }
+        .big-chart-card.critical { border-left: 3px solid #ef4444; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .chart-title { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+        .chart-badges { display: flex; gap: 8px; }
+        .badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+        .badge.warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .chart-container { flex: 1; min-height: 0; position: relative; }
+        .right-panel { width: 45%; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 10px; }
+        .small-chart-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; }
+        .small-chart-card.good { border-left: 3px solid #22c55e; }
+        .small-chart-card.critical { border-left: 3px solid #ef4444; }
+        .small-chart-metrics { display: flex; gap: 20px; margin-bottom: 8px; }
+        .metric-box { text-align: center; }
+        .metric-value { font-size: 20px; font-weight: 700; color: #e2e8f0; }
+        .metric-value.warning { color: #f87171; }
+        .metric-label { font-size: 10px; color: #64748b; }
+        .exception-list { flex: 1; overflow-y: auto; }
+        .exception-item { display: flex; justify-content: space-between; padding: 8px 10px; background: rgba(30, 41, 59, 0.6); border-radius: 6px; margin-bottom: 6px; border-left: 2px solid #f59e0b; }
+        .exception-item.critical { border-left-color: #ef4444; }
+        .exception-info { flex: 1; }
+        .exception-type { font-size: 11px; color: #e2e8f0; }
+        .exception-detail { font-size: 10px; color: #94a3b8; }
+        .exception-amount { font-size: 11px; color: #f87171; }
+        .drill-hint { font-size: 10px; color: #64748b; text-align: right; margin-top: 6px; }
+    </style>
+</head>
+<body>
+    <div class="cockpit">
+        <div class="header">
+            <div class="header-title">📊 库存健康度分析驾驶舱</div>
+            <div class="header-meta">
+                <span>📁 机械装备企业ERP报表_4亿产值.xlsx</span>
+                <span>📅 2025-01 ~ 2025-12</span>
+                <span>📦 5169种物料</span>
+            </div>
+        </div>
+        
+        <div class="summary-section">
+            <div class="summary-header">
+                <div class="summary-title">📋 本月库存管理综述</div>
+            </div>
+            <div class="summary-text">
+                整体来看，全年库存呈现<span class="warning">"持续累积"</span>态势。
+                12月末库存资金达<span class="highlight">¥120.13亿</span>，较1月增长<span class="warning">822%</span>。
+                <span class="urgent">呆滞物料662种，金额¥9.88亿（占8.2%）</span>。
+                进出库比例<span class="warning">1.79:1</span>，入库速度持续高于出库，建议控制采购节奏。
+                <br><br>
+                <strong>A类物料（二八原则）：</strong> 占总金额<span class="highlight">80.0%</span>，共<span class="highlight">1126种</span>。
+            </div>
+            
+            <div class="action-bar">
+                <div class="action-btn-large critical">
+                    <div class="action-btn-title">⚠️ 呆滞物料处置</div>
+                    <div class="action-btn-main">662种需紧急处理</div>
+                    <div class="action-btn-amount">可释放资金 ¥9.88亿</div>
+                </div>
+                <div class="action-btn-large warning">
+                    <div class="action-btn-title">📊 ABC分类监控</div>
+                    <div class="action-btn-main">A类1126种（占资金80%）</div>
+                    <div class="action-btn-amount">A类资金 ¥96.09亿</div>
+                </div>
+                <div class="action-btn-large normal">
+                    <div class="action-btn-title">🔍 单据异常监控</div>
+                    <div class="action-btn-main">1964笔异常待核实</div>
+                    <div class="action-btn-amount">负库存1111种</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="big-chart-card warning">
+                    <div class="chart-header">
+                        <span class="chart-title">💰 资金占用趋势</span>
+                        <div class="chart-badges">
+                            <span class="badge">12月库存 ¥120.13亿</span>
+                            <span class="badge warning">较1月+822%</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartCapital"></canvas>
+                    </div>
+                </div>
+                
+                <div class="big-chart-card critical">
+                    <div class="chart-header">
+                        <span class="chart-title">⚠️ 呆滞风险趋势</span>
+                        <div class="chart-badges">
+                            <span class="badge critical">呆滞资金 ¥9.88亿(8.2%)</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartStagnant"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="small-chart-card good">
+                    <div class="chart-header">
+                        <span class="chart-title">🔄 库存流动效率</span>
+                        <span class="badge warning">需关注</span>
+                    </div>
+                    <div class="small-chart-metrics">
+                        <div class="metric-box">
+                            <div class="metric-value warning">1.79:1</div>
+                            <div class="metric-label">全年进销比</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value">¥358亿</div>
+                            <div class="metric-label">全年入库</div>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="flex:1;">
+                        <canvas id="chartTurnover"></canvas>
+                    </div>
+                </div>
+                
+                <div class="small-chart-card critical">
+                    <div class="chart-header">
+                        <span class="chart-title">🔍 单据异常监控</span>
+                        <span class="badge critical">1964笔异常</span>
+                    </div>
+                    <div class="exception-list">
+                        <div class="exception-item critical">
+                            <div class="exception-info">
+                                <div class="exception-type">【负库存】1111种物料</div>
+                                <div class="exception-detail">系统库存为负，需立即核查</div>
+                            </div>
+                        </div>
+                        <div class="exception-item">
+                            <div class="exception-info">
+                                <div class="exception-type">【单价异常】690种</div>
+                                <div class="exception-detail">波动>30%</div>
+                            </div>
+                        </div>
+                        <div class="exception-item">
+                            <div class="exception-info">
+                                <div class="exception-type">【数量异常】634笔</div>
+                            </div>
+                        </div>
+                        <div class="exception-item">
+                            <div class="exception-info">
+                                <div class="exception-type">【金额异常】640笔</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+        const capitalData = [1.66, 2.23, 3.25, 4.48, 5.89, 7.20, 8.16, 9.55, 10.79, 12.00, 13.78, 15.34];
+        const stagnantData = [0.18, 0.24, 0.36, 0.49, 0.65, 0.79, 0.90, 1.05, 1.19, 1.32, 1.52, 1.69];
+        const healthyData = capitalData.map((c, i) => c - stagnantData[i]);
+        const ratioData = [2.0, 1.26, 1.58, 1.68, 1.85, 1.97, 1.47, 1.86, 1.69, 1.65, 2.42, 2.02];
+
+        new Chart(document.getElementById('chartCapital'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: '资金占用',
+                    data: capitalData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: '月均基准',
+                    data: Array(12).fill(90.38),
+                    borderColor: '#64748b',
+                    borderDash: [5, 5]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#334155' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: '#334155' }, ticks: { callback: v => '¥' + v + '亿' } }
+                }
+            }
+        });
+        
+        new Chart(document.getElementById('chartStagnant'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: '呆滞资金',
+                    data: stagnantData,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.35)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: '健康资金',
+                    data: healthyData,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#334155' } },
+                    y: { stacked: true, ticks: { callback: v => '¥' + v + '亿' } }
+                }
+            }
+        });
+        
+        new Chart(document.getElementById('chartTurnover'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: '进销比',
+                    data: ratioData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: '平衡线',
+                    data: Array(12).fill(1),
+                    borderColor: '#22c55e',
+                    borderDash: [5, 5]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+# 库存健康度 · 输出结构
+
+> **V2工厂标准工位5-④** | 版本: v1.0
+> **用途**: 定义L1概览+L2下钻的输出数据结构。程序员按此实现输出模块。
+
+---
+
+## 1. 整体输出结构
+
+```json
+{
+  "version": "1.0",
+  "report_name": "库存健康度分析报告",
+  "generated_at": "2026-05-14T09:00:00+08:00",
+  "data_range": {
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "is_complete": true
+  },
+  "data_quality": {
+    "total_records": 12794,
+    "valid_records": 12794,
+    "invalid_records": 0,
+    "quality_grade": "A"
+  },
+  "disclaimer": {
+    "amount_basis": "库存金额基于采购进价/成本价计算，不含税",
+    "stagnant_definition": "超过配置阈值天数无出库记录的物料",
+    "anomaly_note": "异常检测为自动分析结果，仅供决策参考，需人工确认",
+    "initial_stock": "不含期初结存，仅基于本周期交易数据"
+  },
+  "overview": { "...": "见下方L1" },
+  "details": { "...": "见下方L2" }
+}
+```
+
+---
+
+## 2. L1概览层（老板一眼看完）
+
+### 结构定义
+
+```json
+{
+  "overall_health": {
+    "score": 62,
+    "grade": "yellow",
+    "summary": "库存持续增长需关注，呆滞占比偏高",
+    "action_suggestions": [
+      "建议盘点处理呆滞物料，释放资金",
+      "关注采购节奏，入库高出库近40%"
+    ]
+  },
+  "indicators": [
+    {
+      "id": "total_value",
+      "name": "库存总资金",
+      "value": 280000000.00,
+      "unit": "元",
+      "display_value": "2.80亿",
+      "trend": "up",
+      "traffic_light": "red",
+      "summary": "库存资金2.80亿，近3个月月均净增1.4亿，持续增长",
+      "detail_path": "/drilldown/total_value"
+    },
+    {
+      "id": "stagnant_ratio",
+      "name": "呆滞物料占比",
+      "value": 0.12,
+      "display_value": "12%",
+      "stagnant_amount": 33600000.00,
+      "display_stagnant": "3,360万",
+      "config_days": 180,
+      "traffic_light": "yellow",
+      "summary": "呆滞物料占比12%（3,360万），超过常规水平",
+      "detail_path": "/drilldown/stagnant_ratio"
+    },
+    {
+      "id": "balance",
+      "name": "出入库平衡度",
+      "value": 1.45,
+      "display_value": "1.45",
+      "judgment": "严重失衡",
+      "traffic_light": "red",
+      "summary": "连续6个月入库金额比出库多45%，库存持续积压",
+      "detail_path": "/drilldown/balance"
+    },
+    {
+      "id": "anomalies",
+      "name": "异常物料检测",
+      "total": 6,
+      "involved_amount": 12000000.00,
+      "display_amount": "1,200万",
+      "breakdown": {
+        "price_spike": 2,
+        "qty_spike": 2,
+        "no_outbound": 1,
+        "freq_change": 1
+      },
+      "traffic_light": "red",
+      "summary": "发现6种物料异常，涉及金额1,200万，建议采购部复核",
+      "detail_path": "/drilldown/anomalies"
+    }
+  ],
+  "traffic_light_colors": {
+    "green": { "hex": "#4CAF50", "label": "正常" },
+    "yellow": { "hex": "#FFC107", "label": "关注" },
+    "red": { "hex": "#F44336", "label": "警戒" }
+  }
+}
+```
+
+### 展示要求
+
+| 要求 | 说明 |
+|:-----|:-----|
+| 一屏可见 | 4个指标 + 一句话结论 + 整体健康度评分，手机/PC均无需滚动 |
+| 3秒原则 | 4个指标的红黄绿灯一眼看出整体健康度 |
+| 一句话结论 | AI自动生成：如"库存持续增长需关注" |
+| 建议行动 | 1-2条可执行的建议 |
+| 下钻入口 | 每个指标都带 `detail_path` 指向详情 |
+
+---
+
+## 3. L2下钻层（各指标详情）
+
+### 3.1 库存总资金详情
+
+```json
+// GET /drilldown/total_value
+// 返回:
+{
+  "indicator_id": "total_value",
+  "title": "库存总资金月度趋势",
+  "chart_type": "mixed",  // 柱状+折线混合图
+  "data": {
+    "total_value": 280000000.00,
+    "display_value": "2.80亿",
+    "monthly": [
+      { "month": "2025-01", "in": 332990000, "out": 166650000, "net": 166340000 },
+      { "month": "2025-02", "in": 269450000, "out": 213110000, "net": 56340000 },
+      // ... 共12个月
+    ]
+  },
+  "traffic_light": "red",
+  "trend_analysis": "库存资金从年初持续攀升，12月达峰值。入库金额保持在2.7-3.3亿/月，出库波动在1.3-2.1亿/月，入多出少格局未变"
+}
+```
+
+### 3.2 呆滞物料详情
+
+```json
+// GET /drilldown/stagnant_ratio
+// 返回:
+{
+  "indicator_id": "stagnant_ratio",
+  "title": "呆滞物料分析",
+  "config": {
+    "stagnant_days": 180,
+    "green_ratio": 0.05,
+    "yellow_ratio": 0.15
+  },
+  "summary": {
+    "ratio": 0.12,
+    "amount": 33600000.00,
+    "count": 42
+  },
+  "top_list": [
+    {
+      "rank": 1,
+      "material_code": "CP92",
+      "material_name": "大型振动筛",
+      "material_spec": "PE750×1060",
+      "last_out_date": "2025-03-15",
+      "days_since_last_out": 320,
+      "current_amount": 12800000.00,
+      "amount_pct": 4.57
+    }
+    // ... TOP 10
+  ]
+}
+```
+
+### 3.3 出入库平衡详情
+
+```json
+// GET /drilldown/balance
+// 返回:
+{
+  "indicator_id": "balance",
+  "title": "月度出入库对比",
+  "chart_type": "bar",  // 双柱图
+  "overall_ratio": 1.45,
+  "judgment": "严重失衡",
+  "monthly": [
+    { "month": "2025-01", "in": 332990000, "out": 166650000, "ratio": 2.00 },
+    // ... 12个月
+  ],
+  "analysis": "全年12个月中，有10个月入库金额大于出库，仅2个月基本平衡。库存累计净增约15亿"
+}
+```
+
+### 3.4 异常物料详情
+
+```json
+// GET /drilldown/anomalies
+// 返回:
+{
+  "indicator_id": "anomalies",
+  "title": "异常物料检测结果",
+  "note": "自动检测结果，需人工确认",
+  "summary": {
+    "total": 6,
+    "involved_amount": 12000000.00
+  },
+  "by_type": [
+    {
+      "type": "price_spike",
+      "type_label": "单价异常",
+      "count": 2,
+      "items": [
+        {
+          "material_code": "CP33",
+          "material_name": "中型齿轮减速机",
+          "spec": "PE750×1060",
+          "last_price": 534362.00,
+          "avg_price": 267181.00,
+          "deviation_ratio": 1.0,
+          "last_amount": 534362,
+          "note": "单价为历史均价的2倍"
+        }
+      ]
+    },
+    {
+      "type": "qty_spike",
+      "type_label": "采购量异常",
+      "count": 2,
+      "items": [ "...similar" ]
+    },
+    {
+      "type": "no_outbound",
+      "type_label": "长期不出库",
+      "count": 1,
+      "items": [ "...similar" ]
+    },
+    {
+      "type": "freq_change",
+      "type_label": "采购频率异常",
+      "count": 1,
+      "items": [ "...similar" ]
+    }
+  ]
+}
+```
+
+---
+
+## 4. 输出规范汇总
+
+| 项目 | 规范 |
+|:-----|:-----|
+| 格式 | JSON（前后端分离）/ 或直接生成HTML（内嵌JSON数据） |
+| 编码 | UTF-8 |
+| 数值精度 | 金额保留2位小数，比率保留4位小数 |
+| 大数字显示 | ≥10,000显示为"万"，≥100,000,000显示为"亿"（L1层） |
+| 红黄绿灯 | L1层每个指标必须带，L2层可带可不带 |
+| 下钻实现 | API路径 /drilldown/{indicator_id}，GET，无参数 |
+| 数据范围 | L1层显示最近12个月，L2层显示全部数据 |
