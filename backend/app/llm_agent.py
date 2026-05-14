@@ -3,9 +3,9 @@ from __future__ import annotations
 import copy
 import json
 import os
+import urllib.error
+import urllib.request
 from typing import Any
-
-from openai import OpenAI
 
 
 DEFAULT_MODEL = "deepseek-v4-flash"
@@ -73,18 +73,33 @@ def _call_deepseek(
     overview: dict[str, Any],
     details: dict[str, Any],
 ) -> dict[str, Any]:
-    client = OpenAI(api_key=api_key, base_url=base_url, timeout=30)
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
+    payload = {
+        "model": model,
+        "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": json.dumps(_agent_input(overview, details), ensure_ascii=False)},
         ],
-        temperature=0.2,
-        max_tokens=1200,
-        response_format={"type": "json_object"},
+        "temperature": 0.2,
+        "max_tokens": 1200,
+        "response_format": {"type": "json_object"},
     )
-    content = response.choices[0].message.content or "{}"
+    request = urllib.request.Request(
+        url=f"{base_url.rstrip('/')}/chat/completions",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"DeepSeek API HTTP {exc.code}: {error_body[:300]}") from exc
+
+    content = body["choices"][0]["message"].get("content") or "{}"
     return json.loads(_strip_code_fence(content))
 
 
