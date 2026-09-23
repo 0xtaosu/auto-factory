@@ -1,0 +1,111 @@
+@prefix inv: <https://example.org/inventory/> .
+@prefix metric: <https://example.org/metric/> .
+@prefix assessment: <https://example.org/assessment/> .
+@prefix policy: <https://example.org/policy/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://example.org/ontology/inventory-activity> a owl:Ontology ;
+    owl:versionInfo "0.1" ;
+    rdfs:comment "ERP activity facts and diagnostic candidates, not inventory positions. No runtime imports."@en .
+
+inv:Material a owl:Class ; rdfs:label "物料"@zh ;
+    rdfs:comment "Enterprise material master identity keyed by material code; not a physical inventory balance."@en .
+inv:InventoryMovementEvent a owl:Class ; rdfs:label "库存流转事件"@zh ;
+    rdfs:seeAlso <https://spec.industrialontologies.org/ontology/construct/MaterialLocationChangeProcess> ;
+    rdfs:comment "Semantic reference to IOF Release 202502. ERP postings do not by themselves prove every physical-process axiom; no equivalence/subclass assertion is made."@en .
+inv:Department a owl:Class .
+inv:Supplier a owl:Class .
+inv:SourceRecord a owl:Class ; rdfs:subClassOf prov:Entity .
+inv:AnalysisRun a owl:Class ; rdfs:subClassOf prov:Activity .
+inv:TransactionType a owl:Class .
+inv:Inbound a inv:TransactionType .
+inv:Outbound a inv:TransactionType .
+metric:Metric a owl:Class .
+metric:MetricObservation a owl:Class .
+assessment:MaterialActivityAssessment a owl:Class .
+assessment:Classification a owl:Class .
+assessment:ActiveMaterial a assessment:Classification ;
+    rdfs:label "未达到无交易阈值"@zh ;
+    rdfs:comment "Below the selected inactivity threshold only; not evidence of inventory health."@en .
+assessment:InactiveMaterialCandidate a assessment:Classification ; rdfs:label "长期无交易物料候选"@zh .
+assessment:NotEvaluated a assessment:Classification ; rdfs:label "无法评估或策略不适用"@zh .
+policy:Policy a owl:Class .
+policy:SlowMovingPolicy a owl:Class ; rdfs:subClassOf policy:Policy .
+
+metric:DaysSinceLastMovement a metric:Metric ;
+    rdfs:label "末次动用天数"@zh ;
+    rdfs:comment "Observation date minus latest accepted inbound or outbound date on/before that date."@en ;
+    metric:supportsDiagnosisOf <https://example.org/indicator/M6-01-02> .
+metric:MovementFrequency a metric:Metric ; rdfs:comment "Count of accepted events in the explicit inclusive frequency window."@en .
+metric:AnnualOutboundQuantity a metric:Metric ; rdfs:comment "Sum of accepted outbound quantity in observation calendar year through observation date, per material and consistent unit."@en .
+metric:AnnualInboundQuantity a metric:Metric .
+metric:AnnualOutboundValue a metric:Metric .
+metric:AnnualInboundValue a metric:Metric .
+metric:InboundFrequency a metric:Metric .
+metric:OutboundFrequency a metric:Metric .
+metric:DaysSinceLastInbound a metric:Metric .
+metric:DaysSinceLastOutbound a metric:Metric .
+
+inv:hasMaterial a owl:ObjectProperty ; rdfs:range inv:Material .
+inv:hasDepartment a owl:ObjectProperty ; rdfs:range inv:Department .
+inv:hasSupplier a owl:ObjectProperty ; rdfs:range inv:Supplier .
+inv:hasActivityAssessment a owl:ObjectProperty ; rdfs:range assessment:MaterialActivityAssessment .
+inv:transactionType a owl:ObjectProperty ; rdfs:range inv:TransactionType .
+metric:observedFor a owl:ObjectProperty ; rdfs:range inv:Material .
+metric:metricType a owl:ObjectProperty ; rdfs:range metric:Metric .
+metric:lastMovementEvent a owl:ObjectProperty ; rdfs:range inv:InventoryMovementEvent .
+metric:supportsDiagnosisOf a owl:AnnotationProperty .
+assessment:assessesMaterial a owl:ObjectProperty ; rdfs:range inv:Material .
+assessment:usesObservation a owl:ObjectProperty ; rdfs:range metric:MetricObservation .
+assessment:evaluatedByPolicy a owl:ObjectProperty ; rdfs:range policy:Policy .
+assessment:hasClassification a owl:ObjectProperty ; rdfs:range assessment:Classification .
+policy:metric a owl:ObjectProperty ; rdfs:range metric:Metric .
+
+inv:materialCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:materialName a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:materialSpecification a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:materialCategory a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:metadataConflicts a owl:DatatypeProperty .
+inv:unit a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:movementId a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:transactionDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+inv:quantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+inv:unitPrice a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+inv:amount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+inv:remark a owl:DatatypeProperty ; rdfs:range xsd:string .
+inv:sourceFileSha256 a owl:DatatypeProperty .
+inv:sourceFilename a owl:DatatypeProperty .
+inv:sheetName a owl:DatatypeProperty .
+inv:excelRow a owl:DatatypeProperty ; rdfs:range xsd:integer .
+inv:rawValues a owl:DatatypeProperty .
+inv:normalizedValues a owl:DatatypeProperty .
+inv:issues a owl:DatatypeProperty .
+inv:recordStatus a owl:DatatypeProperty .
+inv:duplicateOf a owl:ObjectProperty .
+inv:runManifest a owl:DatatypeProperty .
+metric:hasNumericValue a owl:DatatypeProperty .
+metric:observationDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+metric:lastMovementDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+metric:dataWindowStart a owl:DatatypeProperty ; rdfs:range xsd:date .
+metric:dataWindowEnd a owl:DatatypeProperty ; rdfs:range xsd:date .
+metric:windowStart a owl:DatatypeProperty ; rdfs:range xsd:date .
+metric:windowEnd a owl:DatatypeProperty ; rdfs:range xsd:date .
+metric:unit a owl:DatatypeProperty .
+metric:status a owl:DatatypeProperty .
+metric:unavailableReason a owl:DatatypeProperty .
+metric:quantityByUnit a owl:DatatypeProperty ; rdfs:comment "JSON object preserving separate quantity totals per unit; no implicit unit conversion."@en .
+assessment:inactiveCandidate a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+assessment:evaluationStatus a owl:DatatypeProperty .
+assessment:leftCensoredPopulation a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+policy:policyId a owl:DatatypeProperty .
+policy:policyName a owl:DatatypeProperty .
+policy:operator a owl:DatatypeProperty .
+policy:thresholdValue a owl:DatatypeProperty ; rdfs:range xsd:integer .
+policy:thresholdUnit a owl:DatatypeProperty .
+policy:effectiveFrom a owl:DatatypeProperty ; rdfs:range xsd:date .
+policy:effectiveTo a owl:DatatypeProperty ; rdfs:range xsd:date .
+policy:materialCategory a owl:DatatypeProperty .
+policy:policySnapshot a owl:DatatypeProperty .

@@ -20,6 +20,9 @@ build/
 *.sqlite
 *.sqlite3
 uploads/
+backend/data/activity/
+data/processed/
+.pytest_cache/
 
 # Brainstorm/browser companion local artifacts
 .superpowers/

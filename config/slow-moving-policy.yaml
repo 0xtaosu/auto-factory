@@ -1,0 +1,9 @@
+policy_id: slow-moving-default-180d
+policy_name: 长期无交易物料候选默认策略
+metric: DaysSinceLastMovement
+operator: ">="
+threshold_value: 180
+threshold_unit: day
+effective_from: 2025-01-01
+effective_to: null
+material_category: "*"
