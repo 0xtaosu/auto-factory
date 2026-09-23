@@ -10,7 +10,7 @@ analysis path. Existing health algorithms remain historical code, not the defaul
    calculate metrics, evaluate YAML policy, export JSON/CSV/Turtle and quality report.
 2. Preserve source bytes, file SHA256, sheet, row, typed raw values and normalized
    values. Invalid rows remain in raw records with issues. Exact duplicate rows
-   (including source sequence) are retained as evidence but counted once; matching
+   (including a nonempty source sequence) are retained as evidence but counted once; matching
    business fields with different sequence numbers are only flagged, not dropped.
 3. Compute three required metrics and optional flow totals with Decimal arithmetic.
    Missing amount does not invalidate an otherwise valid event; value aggregates
@@ -66,6 +66,9 @@ All endpoints below use `/api/activity`. Error responses use FastAPI `detail`.
   last_movement_date, days_since_last_movement, movement_frequency,
   annual_outbound_quantity, policy_id, threshold_value, inactive_candidate,
   classification, last_movement_event_ids, metric_observation_ids`.
+  Also exposes `metadata_conflicts`, `quantity_aggregation_status`, and
+  `annual_outbound_quantity_by_unit`/`annual_inbound_quantity_by_unit` maps. Render
+  unit conflicts explicitly when total quantity is null; never coerce null to zero.
   Quantities/amounts are decimal strings or null; recency may be null if not observed.
 - `GET /jobs/{id}/materials/{code}/explanation`:
   `{assessment, policy, metric_observations:[...], last_movement_events:[...],
@@ -90,3 +93,11 @@ missing amount/supplier, future-event exclusion, unit conflicts, repeated-run ID
 policy snapshot changes, API persistence/downloads, RDF paths and SPARQL queries.
 Baseline: 12,794 events; 820 materials; 5,194 inbound; 7,600 outbound; 13 candidates.
 Real GC010 last movement is 2025-12-08, 23 days; the 217-day example is illustrative.
+
+## Real-source findings
+
+816 material codes have inconsistent metadata; 531 have inconsistent units. Keep
+the user-specified grouping by material code, warn at source-row and assessment
+level, and expose per-unit quantities without inventing conversions. The required
+annual outbound total is unavailable for these 531 materials until units are
+resolved. Recency/frequency remain computable on the material-code grain.

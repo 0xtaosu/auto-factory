@@ -9,6 +9,10 @@ COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/app ./app
+COPY config ./config
+COPY ontology ./ontology
+ENV ACTIVITY_CONFIG_DIR=/app/config \
+    ACTIVITY_ONTOLOGY_PATH=/app/ontology/inventory-activity.ttl
 
 EXPOSE 8000
 

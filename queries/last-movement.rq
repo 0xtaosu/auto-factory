@@ -1,0 +1,14 @@
+PREFIX inv: <https://example.org/inventory/>
+PREFIX metric: <https://example.org/metric/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+# Replace GC010. All same-day ties are returned.
+SELECT ?event ?date ?type ?quantity ?source ?row WHERE {
+  VALUES ?code { "GC010" }
+  ?material inv:materialCode ?code .
+  ?observation metric:observedFor ?material ;
+    metric:metricType metric:DaysSinceLastMovement ; metric:lastMovementEvent ?event .
+  ?event inv:transactionDate ?date ; inv:transactionType ?type ;
+    inv:quantity ?quantity ; prov:wasDerivedFrom ?source .
+  ?source inv:excelRow ?row .
+}
+ORDER BY ?row

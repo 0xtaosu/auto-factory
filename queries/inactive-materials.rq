@@ -1,0 +1,11 @@
+PREFIX inv: <https://example.org/inventory/>
+PREFIX metric: <https://example.org/metric/>
+SELECT ?material ?code ?days ?observationDate WHERE {
+  ?observation a metric:MetricObservation ;
+    metric:metricType metric:DaysSinceLastMovement ;
+    metric:observedFor ?material ; metric:hasNumericValue ?days ;
+    metric:observationDate ?observationDate .
+  ?material inv:materialCode ?code .
+  FILTER (?days >= 180)
+}
+ORDER BY DESC(?days) ?code

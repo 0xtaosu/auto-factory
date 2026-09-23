@@ -5,9 +5,10 @@ services:
       dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
-      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      INVENTORY_ADMIN_TOKEN: ${INVENTORY_ADMIN_TOKEN:-}
+      INVENTORY_ALLOWED_ORIGINS: ${INVENTORY_ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
+      INVENTORY_ALLOWED_HOSTS: ${INVENTORY_ALLOWED_HOSTS:-localhost:*,127.0.0.1:*}
+      INVENTORY_COOKIE_SECURE: ${INVENTORY_COOKIE_SECURE:-false}
     volumes:
       - backend_data:/app/data
     expose:

@@ -1,0 +1,19 @@
+PREFIX inv: <https://example.org/inventory/>
+PREFIX metric: <https://example.org/metric/>
+PREFIX assessment: <https://example.org/assessment/>
+PREFIX policy: <https://example.org/policy/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+SELECT ?code ?days ?observationDate ?date ?type ?quantity ?source ?row ?fileHash ?policyId ?threshold WHERE {
+  ?assessment assessment:hasClassification assessment:InactiveMaterialCandidate ;
+    assessment:assessesMaterial ?material ; assessment:usesObservation ?observation ;
+    assessment:evaluatedByPolicy ?policy .
+  ?material inv:materialCode ?code .
+  ?observation metric:metricType metric:DaysSinceLastMovement ;
+    metric:hasNumericValue ?days ; metric:observationDate ?observationDate ;
+    metric:lastMovementEvent ?event .
+  ?event inv:transactionDate ?date ; inv:transactionType ?type ;
+    inv:quantity ?quantity ; prov:wasDerivedFrom ?source .
+  ?source inv:excelRow ?row ; inv:sourceFileSha256 ?fileHash .
+  ?policy policy:policyId ?policyId ; policy:thresholdValue ?threshold .
+}
+ORDER BY DESC(?days) ?code ?row

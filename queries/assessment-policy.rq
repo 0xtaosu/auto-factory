@@ -1,0 +1,10 @@
+PREFIX inv: <https://example.org/inventory/>
+PREFIX assessment: <https://example.org/assessment/>
+PREFIX policy: <https://example.org/policy/>
+SELECT ?assessment ?code ?policy ?policyId ?operator ?threshold ?classification WHERE {
+  ?assessment assessment:assessesMaterial ?material ;
+    assessment:evaluatedByPolicy ?policy ; assessment:hasClassification ?classification .
+  ?material inv:materialCode ?code .
+  ?policy policy:policyId ?policyId ; policy:operator ?operator ; policy:thresholdValue ?threshold .
+}
+ORDER BY ?code
